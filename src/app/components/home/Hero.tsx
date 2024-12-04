@@ -18,10 +18,10 @@ const Hero = () => {
       </div>
       <div className="relative z-10 max-w-6xl mx-auto px-4 h-full flex items-center">
         <div className="bg-white/90 p-8 rounded-lg max-w-xl">
-          <h1 className="text-3xl font-bold mb-4">
+          <h1 className="text-3xl font-bold mb-4 text-black">
             Connecting You with Trusted LGBTQIA+ Service Providers
           </h1>
-          <p className="mb-6 text-gray-800">
+          <p className="mb-6 text-black">
             At Local Queeries, we empower LGBTQIA+ individuals by connecting them with
             verified service providers who prioritize safety and inclusivity. Experience peace of
             mind knowing that every professional in our directory is committed to creating a
