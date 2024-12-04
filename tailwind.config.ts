@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import { colors } from "./src/app/ui/theme/colors";
+import { typography } from "./src/app/ui/theme/typography";
 
 export default {
   content: [
@@ -8,10 +10,15 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-      },
+      colors,
+      fontFamily: typography.fontFamily,
+      fontSize: typography.fontSize,
+      fontWeight: {
+        normal: '400',
+        medium: '500', 
+        semibold: '600',
+        bold: '700'
+      }
     },
   },
   plugins: [],

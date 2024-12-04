@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@/app/ui/styles/variables.css';
+@import '@/app/ui/styles/components.css';
+
+
+@layer components {
+  .container-padding {
+    @apply px-4 max-w-6xl mx-auto;
+  }
+  
+  .section-padding {
+    @apply py-16;
+  }
+}
+
+/* Base styles */
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}

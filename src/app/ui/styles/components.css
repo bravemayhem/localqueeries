@@ -1,0 +1,7 @@
+.container-padding {
+  @apply px-4 max-w-6xl mx-auto;
+}
+
+.section-padding {
+  @apply py-16;
+}
