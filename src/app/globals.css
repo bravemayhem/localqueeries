@@ -6,6 +6,12 @@
 @import '@/app/ui/styles/components.css';
 
 
+:root {
+  /* Light mode defaults */
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
 @layer components {
   .container-padding {
     @apply px-4 max-w-6xl mx-auto;
@@ -16,16 +22,19 @@
   }
 }
 
-/* Base styles */
+
+/* Base styles 
 body {
   color: var(--foreground);
   background: var(--background);
 }
+*/
 
-/* Dark mode overrides */
+/* Dark mode overrides - not used yet
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
+  */
