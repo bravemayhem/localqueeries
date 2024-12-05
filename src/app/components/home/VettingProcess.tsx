@@ -33,12 +33,15 @@ const VettingProcess = () => {
             </Link>
           </div>
         </div>
-        <div className="flex-1 relative h-[500px]">
+        <div className="flex-1 flex justify-end">
           <Image 
-            src="/api/placeholder/500/500"
-            alt="Vetting process"
-            fill
+            src="/images/fixing.png"  // Update this to your image path
+            alt="Our vetting process ensures quality and safety"
+            width={370}   
+            height={385} 
             className="rounded-3xl object-cover"
+            quality={100}
+            priority
           />
         </div>
       </div>

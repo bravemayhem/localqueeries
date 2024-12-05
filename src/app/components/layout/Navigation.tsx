@@ -1,13 +1,20 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Navigation = () => {
  return (
    <nav className="bg-teal-700 p-4 flex justify-between items-center">
      <div className="flex items-center">
-       <Link href="/" className="text-white font-bold text-xl">
-         Local Queeries
+       <Link href="/" className="flex items-center">
+         <Image 
+           src="/images/logo.png"
+           alt="Local Queeries Logo"
+           width={101}  // Adjust these values based on your logo size
+           height={58}  // Adjust these values based on your logo size
+           className="object-contain"
+         />
        </Link>
      </div>
      <div className="flex gap-4">
