@@ -17,16 +17,16 @@ const Navigation = () => {
          />
        </Link>
      </div>
-     <div className="flex gap-4">
+     <div className="flex gap-2 sm:gap-4">
        <Link 
          href="/" 
-         className="bg-[#f5e6c3] px-8 py-2 rounded-md font-medium hover:bg-[#e6d4b0] transition-colors"
+         className="bg-[#f5e6c3] px-4 sm:px-8 py-1.5 sm:py-2 rounded-md font-medium hover:bg-[#e6d4b0] transition-colors text-sm sm:text-base flex items-center justify-center min-w-[80px] sm:min-w-[120px]"
        >
          Home
        </Link>
        <Link 
          href="/find-provider" 
-         className="bg-[#f5e6c3] px-8 py-2 rounded-md font-medium hover:bg-[#e6d4b0] transition-colors"
+         className="bg-[#f5e6c3] px-4 sm:px-8 py-1.5 sm:py-2 rounded-md font-medium hover:bg-[#e6d4b0] transition-colors text-sm sm:text-base flex items-center justify-center min-w-[120px] sm:min-w-[160px]"
        >
          Find Provider
        </Link>
