@@ -4,7 +4,7 @@ import Image from 'next/image';
 export default function FindProvider() {
   return (
     <div>
-      <div className="relative h-[300px] w-full">
+      <div className="relative h-[400px] sm:h-[350px] w-full">
         <div className="absolute inset-0">
           <Image 
             src="/images/manworking.jpg"
@@ -17,9 +17,9 @@ export default function FindProvider() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative z-10 max-w-6xl mx-auto px-4 h-full flex items-center">
-          <div className="bg-white/90 p-6 sm:p-8 rounded-lg max-w-xl">
+          <div className="bg-white/90 p-4 sm:p-6 md:p-8 rounded-lg max-w-xl">
             <span className="text-sm font-medium text-primary-main">Trusted</span>
-            <h1 className="text-2xl sm:text-3xl font-bold mt-2 mb-3 sm:mb-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mt-2 mb-2 sm:mb-3">
               Select a Queer Friendly Provider
             </h1>
             <p className="text-sm sm:text-base text-text-secondary">
