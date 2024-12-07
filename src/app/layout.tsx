@@ -4,7 +4,11 @@ import Navigation from '@/app/components/layout/Navigation'
 import Footer from '@/app/components/layout/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
-const agbalumo = Agbalumo({ subsets: ['latin'], weight: '400' })
+const agbalumo = Agbalumo({ 
+  subsets: ['latin'], 
+  weight: '400',
+  variable: '--font-agbalumo'
+})
 
 export const metadata = {
   title: 'Local Queeries',
@@ -17,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${agbalumo.variable}`}>
       <body className={inter.className}>
         <Navigation />
         <main>{children}</main>

@@ -11,7 +11,10 @@ export default {
   theme: {
     extend: {
       colors,
-      fontFamily: typography.fontFamily,
+      fontFamily: {
+        ...typography.fontFamily,
+        agbalumo: ['var(--font-agbalumo)'],
+      },
       fontSize: typography.fontSize,
       fontWeight: {
         normal: '400',
