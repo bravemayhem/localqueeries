@@ -5,21 +5,25 @@ interface ButtonProps {
   onClick?: () => void;
   variant?: 'primary' | 'secondary';
   className?: string;
+  bold?: boolean;
+  useAgbalumo?: boolean;
 }
 
 export default function Button({ 
   children, 
   onClick, 
   variant = 'primary',
-  className = ''
+  className = '',
+  bold = false,
+  useAgbalumo = false
 }: ButtonProps) {
   return (
     <button 
       className={`px-4 py-2 rounded-md transition-colors ${
         variant === 'primary' 
           ? 'bg-teal-700 text-white hover:bg-teal-800' 
-          : 'bg-[#f5e6c3] text-gray-800 hover:bg-[#e6d4b0]'
-      } ${className}`}
+          : 'bg-[#CB6040] text-white hover:bg-[#E07A5C]'
+      } ${bold ? 'font-medium' : ''} ${useAgbalumo ? 'font-agbalumo' : ''} ${className}`}
       onClick={onClick}
     >
       {children}

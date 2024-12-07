@@ -6,13 +6,15 @@ interface SelectOption {
 }
 
 interface SelectProps {
-  options: SelectOption[];
-  placeholder?: string;
-  onChange?: (value: string) => void;
-  className?: string;
-}
+    value?: string;  // Add this line
+    options: SelectOption[];
+    placeholder?: string;
+    onChange?: (value: string) => void;
+    className?: string;
+  }
 
 export default function Select({ 
+  value,
   options, 
   placeholder, 
   onChange,
@@ -20,11 +22,12 @@ export default function Select({
 }: SelectProps) {
   return (
     <select
+      value={value || ''}
       className={`w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-main ${className}`}
       onChange={(e) => onChange?.(e.target.value)}
     >
       {placeholder && (
-        <option value="" disabled selected>
+        <option value=""> 
           {placeholder}
         </option>
       )}

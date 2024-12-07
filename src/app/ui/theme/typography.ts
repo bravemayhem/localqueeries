@@ -1,6 +1,7 @@
 export const typography = {
     fontFamily: {
       sans: ['Inter', 'sans-serif'],
+      agbalumo: ['Agbalumo', 'cursive'],
     },
     fontSize: {
       xs: '0.75rem',

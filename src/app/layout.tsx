@@ -1,9 +1,10 @@
-import { Inter } from 'next/font/google'
+import { Inter, Agbalumo } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/app/components/layout/Navigation'
 import Footer from '@/app/components/layout/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
+const agbalumo = Agbalumo({ subsets: ['latin'], weight: '400' })
 
 export const metadata = {
   title: 'Local Queeries',
