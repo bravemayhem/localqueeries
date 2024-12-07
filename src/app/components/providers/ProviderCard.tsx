@@ -75,9 +75,9 @@ export default function ProviderCard({
         </div>
         
         <Button
-          bold variant="secondary"
+          bold 
+          variant="secondary"
           className="mt-4"
-          useAgbalumo
         >
           Submit Your Queery
         </Button>
