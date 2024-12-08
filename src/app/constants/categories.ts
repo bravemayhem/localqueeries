@@ -5,6 +5,7 @@ export const PROVIDER_CATEGORIES = [
     'dog walking',
     'carpentry',
     'landscaping',
+    'handywork',
     'cleaning',
     'hvac',
     'roofing',
