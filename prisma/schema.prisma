@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+// Database connection
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Provider model
+model Provider {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Basic Info
+  name        String
+  email       String   @unique
+  phone       String?
+  imageUrl    String?
+  
+  // Business Details
+   businessName   String?
+  category        String  // e.g., 'painting', 'plumbing'
+  services        String[] // Array of services offered
+  isAlly          Boolean @default(false)
+  isVerified      Boolean @default(false)
+  isLGBTQIA       Boolean @default(false)
+
+  // Location
+  address     String?
+  city        String
+  state       String
+  zipCode     String
+  latitude    Float?
+  longitude   Float?
+  
+  // Ratings & Reviews
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  reviews       Review[]
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  rating      Int
+  comment     String?
+  
+  provider    Provider @relation(fields: [providerId], references: [id])
+  providerId  String
+
+  // user relationship
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model User {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Basic Info
+  name          String
+  email         String    @unique
+  password      String    // Hashed password
+  imageUrl      String?
+  phone        String?
+  address      String?
+  preferences  Json?
+
+  // User Type
+  isAdmin       Boolean   @default(false)
+
+  // Relationships
+  reviews       Review[]  // This creates a connection to the Review model
+
+}

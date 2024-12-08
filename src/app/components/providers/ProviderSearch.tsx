@@ -1,10 +1,13 @@
 "use client"; 
 import React, { useState } from 'react';
 import Select from '@/app/ui/components/Select';
+import { PROVIDER_CATEGORIES } from '@/app/constants/categories';
+
 
 interface SearchFilters {
   location: string;
   category: string;
+  customCategory?: string;
   sortBy: string;
 }
 
@@ -45,13 +48,25 @@ export default function ProviderSearch() {
             value={filters.category}
             onChange={handleFilterChange('category')}
             options={[
-              { value: 'painting', label: 'Painting' },
-              { value: 'plumbing', label: 'Plumbing' },
-              { value: 'carpentry', label: 'Carpentry' },
-              // Add more options
+              ...PROVIDER_CATEGORIES.map(category => ({
+                value: category,
+                label: category.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')
+              })),
+              { value: 'other', label: 'Other (Please Specify)' }
             ]}
             placeholder="Select category"
           />
+          {filters.category === 'other' && (
+            <input
+              type="text"
+              className="mt-2 w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-main"
+              placeholder="Please specify service type"
+              value={filters.customCategory || ''}
+              onChange={(e) => handleFilterChange('customCategory')(e.target.value)}
+            />
+          )}
         </div>
         
         <div>
