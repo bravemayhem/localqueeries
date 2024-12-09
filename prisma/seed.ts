@@ -243,7 +243,11 @@ async function main() {
     )
   );
 
-  console.log('Database has been seeded! 🌱');
+  console.log('Database seeded! 🌱\n', {
+    providers: providers.length,
+    users: users.length,
+    reviews: mockReviews.length
+  });
 }
 
 main()
