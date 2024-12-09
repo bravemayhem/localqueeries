@@ -6,14 +6,20 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.1",
+    "@types/google.maps": "^3.58.1",
+    "@types/lodash": "^4.17.13",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.464.0",
     "next": "15.0.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-google-autocomplete": "^2.7.3",
+    "use-places-autocomplete": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",

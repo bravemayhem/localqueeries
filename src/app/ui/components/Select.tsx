@@ -1,17 +1,14 @@
-import React from 'react';
-
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
 interface SelectProps {
-    value?: string;  // Add this line
-    options: SelectOption[];
-    placeholder?: string;
-    onChange?: (value: string) => void;
-    className?: string;
-  }
+  id?: string;  // Make id optional
+  value: string;
+  options: {
+    value: string;
+    label: string;
+  }[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+  className?: string;
+}
 
 export default function Select({ 
   value,

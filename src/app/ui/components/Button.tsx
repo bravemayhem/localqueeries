@@ -6,6 +6,8 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'primary-agbalumo' | 'secondary-agbalumo';
   className?: string;
   bold?: boolean;
+  disabled?: boolean;  // Add disabled prop
+  'aria-busy'?: boolean;  // Add aria-busy prop
 }
 
 export default function Button({ 

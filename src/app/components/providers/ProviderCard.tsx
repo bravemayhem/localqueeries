@@ -28,6 +28,8 @@ export default function ProviderCard({
   isLGBTQIA,
   imageUrl
 }: ProviderCardProps) {
+  console.log('Image URL:', imageUrl); // Add this to debug
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row gap-4">
       <div className="relative w-full md:w-48 h-48 bg-gray-100 rounded-lg">
@@ -37,10 +39,15 @@ export default function ProviderCard({
           </div>
         )}
         <Image
-          src={imageUrl}
+          src={imageUrl || '/images/womanworking.jpg'}
           alt={name}
           fill
           className="object-cover rounded-lg"
+          onError={(e) => {
+            console.error('Image failed to load:', imageUrl); // Add this to debug
+            const target = e.target as HTMLImageElement;
+            target.src = '/images/womanworking.jpg';
+          }}
         />
       </div>
       
