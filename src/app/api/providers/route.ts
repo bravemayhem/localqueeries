@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/app/lib/prisma';
 
 interface ErrorResponse {
   error: string;
@@ -63,22 +63,7 @@ function calculateDistance(
 }
 
 export async function GET(request: Request): Promise<NextResponse<ProviderWithDistance[] | ErrorResponse>> {
-  const prismaInstance = new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      }
-    }
-  });
-
   try {
-    // Add this at the start of the try block
-    console.log('Database URL:', process.env.DATABASE_URL?.slice(0, 20) + '...');
-    const testConnection = await prismaInstance.$queryRaw`SELECT 1 as test`;
-    console.log('Database connection test:', testConnection);
-    
-    
     const { searchParams } = new URL(request.url);
     const latitude = searchParams.get('latitude');
     const longitude = searchParams.get('longitude');
@@ -97,7 +82,7 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       }, { status: 400 });
     }
 
-    const providers = await prismaInstance.provider.findMany({
+    const providers = await prisma.provider.findMany({
       where: {
         ...(category && { category }),
       },
@@ -106,17 +91,13 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       }
     });
 
-    console.log('Database query results:', {
-      providersFound: providers?.length ?? 0,
-      providers: providers?.map(p => ({
-        id: p.id,
-        name: p.name,
-        category: p.category
-      }))
-    });
+    if (!Array.isArray(providers)) {
+      return NextResponse.json({
+        error: 'Invalid database response'
+      }, { status: 500 });
+    }
 
-    // Ensure we have providers before proceeding
-    if (!Array.isArray(providers) || providers.length === 0) {
+    if (providers.length === 0) {
       return NextResponse.json({
         error: `No providers found for category: ${category}`
       }, { status: 404 });
@@ -134,8 +115,7 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
         : null
     }));
 
-    // Ensure we're not sending null
-    return NextResponse.json(providersWithDistance || []);
+    return NextResponse.json(providersWithDistance);
 
   } catch (error) {
     console.error('Server error:', {
@@ -147,28 +127,13 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     return NextResponse.json({
       error: error instanceof Error ? error.message : 'Internal server error'
     }, { status: 500 });
-
-  } finally {
-    await prismaInstance.$disconnect().catch(error => {
-      console.error('Error disconnecting from database:', error);
-    });
   }
 }
 
-
 export async function POST(request: Request) {
-  const prismaInstance = new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      }
-    }
-  });
-
   try {
     const data = await request.json();
-    const provider = await prismaInstance.provider.create({
+    const provider = await prisma.provider.create({
       data: {
         name: data.name,
         email: data.email,
@@ -197,8 +162,5 @@ export async function POST(request: Request) {
       { error: 'Failed to create provider' },
       { status: 500 }
     );
-  } finally {
-    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL');
-    await prismaInstance.$disconnect();
   }
 }

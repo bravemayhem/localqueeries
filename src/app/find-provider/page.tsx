@@ -29,58 +29,47 @@ interface SearchFilters {
 export default function FindProvider() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    // Modify the handleSearch function in find-provider/page.tsx
-    const handleSearch = async (filters: SearchFilters) => {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams({
-          category: filters.category,
-          location: filters.location.address,
-          latitude: filters.location.coordinates.lat.toString(),
-          longitude: filters.location.coordinates.lng.toString(),
-          sortBy: filters.sortBy,
-        });
-    
-        console.log('Sending request with params:', params.toString());
-        
-        const response = await fetch(`/api/providers?${params}`);
-        
-        // Add these debug logs
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers));
-        
-        // Check if response is OK before parsing JSON
-        if (!response.ok) {
-          const text = await response.text();
-          console.error('Error response body:', text);
-          throw new Error(`Server error: ${response.status}`);
-        }
-    
-        const data = await response.json();
-    
-        if (!Array.isArray(data)) {
-          console.error('Invalid response format:', data);
-          throw new Error('Invalid response format from server');
-        }
-    
-        setProviders(data);
-      } catch (error: unknown) {
-        console.error('Error fetching providers:', {
-          name: error instanceof Error ? error.name : 'Unknown error',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        setProviders([]);
-        toast.error(
-          error instanceof Error 
-            ? error.message 
-            : 'An error occurred while fetching providers. Please try again.'
-        );
-      } finally {
-        setIsLoading(false);
+  const handleSearch = async (filters: SearchFilters) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        category: filters.category,
+        location: filters.location.address,
+        latitude: filters.location.coordinates.lat.toString(),
+        longitude: filters.location.coordinates.lng.toString(),
+        sortBy: filters.sortBy,
+      });
+
+      console.log('Sending request with params:', params.toString());
+      
+      const response = await fetch(`/api/providers?${params}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
-    };
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format from server');
+      }
+
+      setProviders(data);
+    } catch (error) {
+      console.error('Error fetching providers:', {
+        name: error instanceof Error ? error.name : 'Unknown error',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      setError(error instanceof Error ? error.message : 'Failed to fetch providers');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatDistance = (distance: number | null): string => {
     if (distance === null) return 'Distance unavailable';
@@ -118,6 +107,10 @@ export default function FindProvider() {
       <div className="bg-primary-light w-full">
         <div className="max-w-7xl mx-auto px-4">
           <ProviderSearch onSearch={handleSearch} />
+          
+          {error && (
+            <div className="text-red-600 text-center py-4">{error}</div>
+          )}
           
           {isLoading ? (
             <div className="text-center py-8">Loading...</div>
