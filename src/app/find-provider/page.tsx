@@ -5,7 +5,6 @@ import Image from 'next/image';
 import ProviderSearch from '@/app/components/providers/ProviderSearch';
 import ProviderCard from '@/app/components/providers/ProviderCard';
 import { Location } from '@/app/types/location';
-import { toast } from 'react-hot-toast';
 
 interface Provider {
   id: string;
