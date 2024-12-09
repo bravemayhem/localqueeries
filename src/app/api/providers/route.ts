@@ -49,7 +49,7 @@ function calculateDistance(
   lat2: number,
   lon2: number
 ): number {
-  const R = 3959; // Earth's radius in miles
+  const R = 3959;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   
@@ -63,7 +63,6 @@ function calculateDistance(
 }
 
 export async function GET(request: Request): Promise<NextResponse<ProviderWithDistance[] | ErrorResponse>> {
-  // Create a new PrismaClient instance for each request
   const prismaInstance = new PrismaClient({
     log: ['query', 'error', 'warn'],
     datasources: {
@@ -74,23 +73,29 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
   });
 
   try {
+    // Add this at the start of the try block
+    console.log('Database URL:', process.env.DATABASE_URL?.slice(0, 20) + '...');
+    const testConnection = await prismaInstance.$queryRaw`SELECT 1 as test`;
+    console.log('Database connection test:', testConnection);
+    
+    
     const { searchParams } = new URL(request.url);
     const latitude = searchParams.get('latitude');
     const longitude = searchParams.get('longitude');
     const category = searchParams.get('category');
     
-    if (!latitude || !longitude) {
-      return NextResponse.json(
-        { error: 'Latitude and longitude are required' },
-        { status: 400 }
-      );
-    }
-
-    console.log('Attempting database query with params:', {
-      category,
+    console.log('Received request params:', {
       latitude,
-      longitude
+      longitude,
+      category,
+      allParams: Object.fromEntries(searchParams.entries())
     });
+
+    if (!latitude || !longitude) {
+      return NextResponse.json({
+        error: 'Latitude and longitude are required'
+      }, { status: 400 });
+    }
 
     const providers = await prismaInstance.provider.findMany({
       where: {
@@ -101,16 +106,23 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       }
     });
 
-    console.log('Query successful, found providers:', providers.length);
+    console.log('Database query results:', {
+      providersFound: providers?.length ?? 0,
+      providers: providers?.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category
+      }))
+    });
 
-    if (!providers || providers.length === 0) {
-      return NextResponse.json(
-        { error: 'No providers found' },
-        { status: 404 }
-      );
+    // Ensure we have providers before proceeding
+    if (!Array.isArray(providers) || providers.length === 0) {
+      return NextResponse.json({
+        error: `No providers found for category: ${category}`
+      }, { status: 404 });
     }
 
-    const providersWithDistance = providers.map((provider) => ({
+    const providersWithDistance = providers.map(provider => ({
       ...provider,
       distance: provider.latitude && provider.longitude
         ? calculateDistance(
@@ -122,31 +134,27 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
         : null
     }));
 
-    if (searchParams.get('sortBy') === 'distance') {
-      providersWithDistance.sort((a, b) => 
-        (a.distance || Infinity) - (b.distance || Infinity)
-      );
-    }
+    // Ensure we're not sending null
+    return NextResponse.json(providersWithDistance || []);
 
-    return NextResponse.json(providersWithDistance);
-
-  } catch (error: unknown) {
-    console.error('Error in GET /api/providers:', {
+  } catch (error) {
+    console.error('Server error:', {
       name: error instanceof Error ? error.name : 'Unknown error',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-    
-    return NextResponse.json(
-      { error: 'Internal server error: ' + (error instanceof Error ? error.message : String(error)) },
-      { status: 500 }
-    );
+
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Internal server error'
+    }, { status: 500 });
+
   } finally {
-    // Clean up prepared statements and disconnect
-    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL')
-    await prismaInstance.$disconnect()
+    await prismaInstance.$disconnect().catch(error => {
+      console.error('Error disconnecting from database:', error);
+    });
   }
 }
+
 
 export async function POST(request: Request) {
   const prismaInstance = new PrismaClient({
@@ -170,7 +178,7 @@ export async function POST(request: Request) {
         category: data.category,
         services: data.services,
         isAlly: data.isAlly || false,
-        isVerified: false, // Default to false for new providers
+        isVerified: false,
         isLGBTQIA: data.isLGBTQIA || false,
         address: data.address,
         city: data.city,
@@ -178,8 +186,8 @@ export async function POST(request: Request) {
         zipCode: data.zipCode,
         latitude: data.latitude,
         longitude: data.longitude,
-        rating: 0, // Default rating for new providers
-        reviewCount: 0 // Default review count for new providers
+        rating: 0,
+        reviewCount: 0
       }
     });
     return NextResponse.json(provider);
@@ -190,7 +198,7 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   } finally {
-    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL')
-    await prismaInstance.$disconnect()
+    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL');
+    await prismaInstance.$disconnect();
   }
-}≈
+}

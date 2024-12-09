@@ -31,49 +31,56 @@ export default function FindProvider() {
   const [isLoading, setIsLoading] = useState(false);
 
     // Modify the handleSearch function in find-provider/page.tsx
-const handleSearch = async (filters: SearchFilters) => {
-  setIsLoading(true);
-  try {
-    const params = new URLSearchParams({
-      category: filters.category,
-      location: filters.location.address,
-      latitude: filters.location.coordinates.lat.toString(),
-      longitude: filters.location.coordinates.lng.toString(),
-      sortBy: filters.sortBy,
-    });
-
-    console.log('Sending request with params:', params.toString());
+    const handleSearch = async (filters: SearchFilters) => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          category: filters.category,
+          location: filters.location.address,
+          latitude: filters.location.coordinates.lat.toString(),
+          longitude: filters.location.coordinates.lng.toString(),
+          sortBy: filters.sortBy,
+        });
     
-    const response = await fetch(`/api/providers?${params}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || `Server error: ${response.status}`);
-    }
-
-    if (!Array.isArray(data)) {
-      console.error('Invalid response format:', data);
-      throw new Error('Invalid response format from server');
-    }
-
-    setProviders(data);
-  } catch (error: unknown) {
-    console.error('Error fetching providers:', {
-      name: error instanceof Error ? error.name : 'Unknown error',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    setProviders([]);
-    // Show error notification to user
-    toast.error(
-      error instanceof Error 
-        ? error.message 
-        : 'An error occurred while fetching providers. Please try again.'
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+        console.log('Sending request with params:', params.toString());
+        
+        const response = await fetch(`/api/providers?${params}`);
+        
+        // Add these debug logs
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers));
+        
+        // Check if response is OK before parsing JSON
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('Error response body:', text);
+          throw new Error(`Server error: ${response.status}`);
+        }
+    
+        const data = await response.json();
+    
+        if (!Array.isArray(data)) {
+          console.error('Invalid response format:', data);
+          throw new Error('Invalid response format from server');
+        }
+    
+        setProviders(data);
+      } catch (error: unknown) {
+        console.error('Error fetching providers:', {
+          name: error instanceof Error ? error.name : 'Unknown error',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        setProviders([]);
+        toast.error(
+          error instanceof Error 
+            ? error.message 
+            : 'An error occurred while fetching providers. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const formatDistance = (distance: number | null): string => {
     if (distance === null) return 'Distance unavailable';
