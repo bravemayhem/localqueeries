@@ -80,16 +80,47 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       );
     }
 
-    const providers = await prisma.provider.findMany({
-      where: {
-        ...(category && { category }),
-      },
-      include: {
-        reviews: true
-      }
+    // Add debug logging
+    console.log('Attempting database query with params:', {
+      category,
+      latitude,
+      longitude
     });
 
-    if (!providers) {
+    // Check Prisma connection
+    try {
+      await prisma.$connect();
+    } catch (dbError) {
+      console.error('Failed to connect to database:', dbError);
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+
+    // Wrap the query in a try-catch to isolate database errors
+    let providers;
+    try {
+      providers = await prisma.provider.findMany({
+        where: {
+          ...(category && { category }),
+        },
+        include: {
+          reviews: true
+        }
+      });
+      console.log('Query successful, found providers:', providers.length);
+    } catch (queryError) {
+      console.error('Database query failed:', queryError);
+      return NextResponse.json(
+        { error: 'Failed to query providers' },
+        { status: 500 }
+      );
+    } finally {
+      await prisma.$disconnect();
+    }
+
+    if (!providers || providers.length === 0) {
       return NextResponse.json(
         { error: 'No providers found' },
         { status: 404 }
@@ -118,10 +149,16 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     }
 
     return NextResponse.json(providersWithDistance);
-  } catch (error) {
-    console.error('Error in GET /api/providers:', error);
+  } catch (error: unknown) {
+    // Log the full error for debugging
+    console.error('Unhandled error in GET /api/providers:', {
+      name: error instanceof Error ? error.name : 'Unknown error',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
   }

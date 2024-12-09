@@ -33,7 +33,6 @@ export default function FindProvider() {
 const handleSearch = async (filters: SearchFilters) => {
   setIsLoading(true);
   try {
-    // Create URL with search parameters
     const params = new URLSearchParams({
       category: filters.category,
       location: filters.location.address,
@@ -42,22 +41,30 @@ const handleSearch = async (filters: SearchFilters) => {
       sortBy: filters.sortBy,
     });
 
+    console.log('Sending request with params:', params.toString());
+    
     const response = await fetch(`/api/providers?${params}`);
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch providers');
+      throw new Error(data.error || `Server error: ${response.status}`);
     }
 
     if (!Array.isArray(data)) {
+      console.error('Invalid response format:', data);
       throw new Error('Invalid response format from server');
     }
 
+    console.log(`Successfully fetched ${data.length} providers`);
     setProviders(data);
-  } catch (error) {
-    console.error('Error fetching providers:', error);
-    setProviders([]); // Set empty array instead of leaving previous state
-    // You might want to add a toast notification here
+  } catch (error: unknown) {
+    console.error('Error fetching providers:', {
+      name: error instanceof Error ? error.name : 'Unknown error',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    setProviders([]);
+    // TODO: Add error notification to user
   } finally {
     setIsLoading(false);
   }
