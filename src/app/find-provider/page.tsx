@@ -5,6 +5,7 @@ import Image from 'next/image';
 import ProviderSearch from '@/app/components/providers/ProviderSearch';
 import ProviderCard from '@/app/components/providers/ProviderCard';
 import { Location } from '@/app/types/location';
+import { toast } from 'react-hot-toast';
 
 interface Provider {
   id: string;
@@ -55,7 +56,6 @@ const handleSearch = async (filters: SearchFilters) => {
       throw new Error('Invalid response format from server');
     }
 
-    console.log(`Successfully fetched ${data.length} providers`);
     setProviders(data);
   } catch (error: unknown) {
     console.error('Error fetching providers:', {
@@ -64,7 +64,12 @@ const handleSearch = async (filters: SearchFilters) => {
       stack: error instanceof Error ? error.stack : undefined
     });
     setProviders([]);
-    // TODO: Add error notification to user
+    // Show error notification to user
+    toast.error(
+      error instanceof Error 
+        ? error.message 
+        : 'An error occurred while fetching providers. Please try again.'
+    );
   } finally {
     setIsLoading(false);
   }

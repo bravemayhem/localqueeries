@@ -2,6 +2,7 @@ import { Inter, Agbalumo } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/app/components/layout/Navigation'
 import Footer from '@/app/components/layout/Footer'
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] })
 const agbalumo = Agbalumo({ 
@@ -26,6 +27,7 @@ export default function RootLayout({
         <Navigation />
         <main>{children}</main>
         <Footer />
+        <Toaster position="top-right" />
       </body>
     </html>
   )

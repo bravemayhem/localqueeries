@@ -158,7 +158,7 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     });
     
     return NextResponse.json(
-      { error: `Internal server error: ${error instanceof Error ? error.message : String(error)}` },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     );
   }
