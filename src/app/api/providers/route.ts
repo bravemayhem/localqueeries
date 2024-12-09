@@ -67,28 +67,34 @@ function calculateDistance(
 
 // Modify the GET handler in api/providers/route.ts
 export async function GET(request: Request): Promise<NextResponse<ProviderWithDistance[] | ErrorResponse>> {
-  const { searchParams } = new URL(request.url);
-  const latitude = searchParams.get('latitude');
-  const longitude = searchParams.get('longitude');
-  const category = searchParams.get('category');
-  
-  if (!latitude || !longitude) {
-    return NextResponse.json(
-      { error: 'Latitude and longitude are required' },
-      { status: 400 }
-    );
-  }
-
   try {
+    const { searchParams } = new URL(request.url);
+    const latitude = searchParams.get('latitude');
+    const longitude = searchParams.get('longitude');
+    const category = searchParams.get('category');
+    
+    if (!latitude || !longitude) {
+      return NextResponse.json(
+        { error: 'Latitude and longitude are required' },
+        { status: 400 }
+      );
+    }
+
     const providers = await prisma.provider.findMany({
       where: {
         ...(category && { category }),
-        // Optional: Add location-based filtering if needed
       },
       include: {
         reviews: true
       }
     });
+
+    if (!providers) {
+      return NextResponse.json(
+        { error: 'No providers found' },
+        { status: 404 }
+      );
+    }
 
     const providersWithDistance = providers.map((provider) => {
       const distance = provider.latitude && provider.longitude ? 
@@ -105,7 +111,6 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       };
     });
 
-    // Sort providers based on criteria
     if (searchParams.get('sortBy') === 'distance') {
       providersWithDistance.sort((a, b) => 
         (a.distance || Infinity) - (b.distance || Infinity)
@@ -114,9 +119,9 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
 
     return NextResponse.json(providersWithDistance);
   } catch (error) {
-    console.error('Error fetching providers:', error);
+    console.error('Error in GET /api/providers:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch providers' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

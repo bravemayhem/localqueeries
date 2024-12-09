@@ -53,12 +53,11 @@ const handleSearch = async (filters: SearchFilters) => {
       throw new Error('Invalid response format from server');
     }
 
-    console.log('Received providers:', data);
     setProviders(data);
   } catch (error) {
     console.error('Error fetching providers:', error);
     setProviders([]); // Set empty array instead of leaving previous state
-    // Optionally add error state handling here
+    // You might want to add a toast notification here
   } finally {
     setIsLoading(false);
   }
