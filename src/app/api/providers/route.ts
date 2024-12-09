@@ -65,52 +65,39 @@ function calculateDistance(
   return R * c;
 }
 
+// Modify the GET handler in api/providers/route.ts
 export async function GET(request: Request): Promise<NextResponse<ProviderWithDistance[] | ErrorResponse>> {
   const { searchParams } = new URL(request.url);
   const latitude = searchParams.get('latitude');
   const longitude = searchParams.get('longitude');
   const category = searchParams.get('category');
-  const sortBy = searchParams.get('sortBy') || 'distance';
-
-  // Use provided coordinates
-  const searchCoordinates = {
-    lat: latitude ? parseFloat(latitude) : 34.0522, // Default to LA if not provided
-    lng: longitude ? parseFloat(longitude) : -118.2437
-  };
-
-  console.log('Search coordinates:', searchCoordinates); // Debug log
+  
+  if (!latitude || !longitude) {
+    return NextResponse.json(
+      { error: 'Latitude and longitude are required' },
+      { status: 400 }
+    );
+  }
 
   try {
     const providers = await prisma.provider.findMany({
       where: {
         ...(category && { category }),
         // Optional: Add location-based filtering if needed
-        city: {
-          in: ['Los Angeles', 'West Hollywood', 'Santa Monica']
-        }
       },
       include: {
         reviews: true
       }
     });
 
-    console.log('Found providers:', providers.length); // Debug log
-
-    const providersWithDistance: ProviderWithDistance[] = providers.map((provider) => {
+    const providersWithDistance = providers.map((provider) => {
       const distance = provider.latitude && provider.longitude ? 
         calculateDistance(
-          searchCoordinates.lat,
-          searchCoordinates.lng,
+          parseFloat(latitude),
+          parseFloat(longitude),
           provider.latitude,
           provider.longitude
         ) : null;
-
-      console.log('Provider distance calculation:', {
-        provider: provider.name,
-        providerCoords: { lat: provider.latitude, lng: provider.longitude },
-        searchCoords: searchCoordinates,
-        distance
-      }); // Debug log
 
       return {
         ...provider,
@@ -119,22 +106,11 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     });
 
     // Sort providers based on criteria
-    if (sortBy === 'distance') {
+    if (searchParams.get('sortBy') === 'distance') {
       providersWithDistance.sort((a, b) => 
         (a.distance || Infinity) - (b.distance || Infinity)
       );
-    } else if (sortBy === 'rating') {
-      providersWithDistance.sort((a, b) => b.rating - a.rating);
-    } else if (sortBy === 'reviews') {
-      providersWithDistance.sort((a, b) => b.reviewCount - a.reviewCount);
     }
-
-    console.log('Returning providers with distances:', 
-      providersWithDistance.map(p => ({
-        name: p.name,
-        distance: p.distance
-      }))
-    ); // Debug log
 
     return NextResponse.json(providersWithDistance);
   } catch (error) {

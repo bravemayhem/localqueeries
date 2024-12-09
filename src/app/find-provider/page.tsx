@@ -29,33 +29,40 @@ export default function FindProvider() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = async (filters: SearchFilters) => {
-    setIsLoading(true);
-    try {
-      // Create URL with search parameters
-      const params = new URLSearchParams({
-        category: filters.category,
-        location: filters.location.address,
-        latitude: filters.location.coordinates.lat.toString(),
-        longitude: filters.location.coordinates.lng.toString(),
-        sortBy: filters.sortBy,
-      });
+    // Modify the handleSearch function in find-provider/page.tsx
+const handleSearch = async (filters: SearchFilters) => {
+  setIsLoading(true);
+  try {
+    // Create URL with search parameters
+    const params = new URLSearchParams({
+      category: filters.category,
+      location: filters.location.address,
+      latitude: filters.location.coordinates.lat.toString(),
+      longitude: filters.location.coordinates.lng.toString(),
+      sortBy: filters.sortBy,
+    });
 
-      const response = await fetch(`/api/providers?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch providers');
-      }
+    const response = await fetch(`/api/providers?${params}`);
+    const data = await response.json();
 
-      const data = await response.json();
-      console.log('Received providers:', data); // Debug log
-      setProviders(data);
-    } catch (error) {
-      console.error('Error fetching providers:', error);
-      // You could add error state handling here
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch providers');
     }
-  };
+
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid response format from server');
+    }
+
+    console.log('Received providers:', data);
+    setProviders(data);
+  } catch (error) {
+    console.error('Error fetching providers:', error);
+    setProviders([]); // Set empty array instead of leaving previous state
+    // Optionally add error state handling here
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const formatDistance = (distance: number | null): string => {
     if (distance === null) return 'Distance unavailable';
