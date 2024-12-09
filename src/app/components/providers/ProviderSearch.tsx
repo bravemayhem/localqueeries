@@ -152,10 +152,10 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
   }, [debouncedSearchAddress]);
 
   return (
-    <div className="py-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="relative md:col-span-1">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="py-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="relative">
+          <label htmlFor="location" className="block text-text-primary font-medium mb-2">
             Location
           </label>
           <input
@@ -167,9 +167,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
               debouncedSearchAddress(e.target.value);
             }}
             placeholder="Enter an address"
-            className={`w-full px-4 py-2 border rounded-md ${
-              error ? 'border-red-500' : 'border-gray-300'
-            } focus:outline-none focus:ring-2 focus:ring-primary-main`}
+            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-main"
             aria-invalid={!!error}
             aria-describedby={error ? "location-error" : undefined}
             suppressHydrationWarning
@@ -205,8 +203,8 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
           )}
         </div>
 
-        <div className="md:col-span-1">
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+        <div>
+          <label htmlFor="category" className="block text-text-primary font-medium mb-2">
             Category
           </label>
           <Select
@@ -224,8 +222,8 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
           />
         </div>
 
-        <div className="md:col-span-1">
-          <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
+        <div>
+          <label htmlFor="sortBy" className="block text-text-primary font-medium mb-2">
             Sort By
           </label>
           <Select
@@ -233,6 +231,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
             value={sortBy}
             onChange={(value) => setSortBy(value)}
             options={sortOptions}
+            placeholder="Sort by"
           />
         </div>
       </div>
@@ -244,7 +243,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
         variant="secondary"
         bold
         className="px-4 sm:px-8 py-1.5 sm:py-2 rounded-md font-medium 
-          hover:bg-[#e6d4b0] transition-colors text-sm sm:text-base flex items-center 
+          transition-colors text-sm sm:text-base flex items-center 
           justify-center min-w-[120px] sm:min-w-[160px]"
       >
         {isLoading ? (
@@ -255,7 +254,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
         ) : (
           'Search Providers'
         )}
-      </Button>
+</Button>
       </div>
     </div>
   );
