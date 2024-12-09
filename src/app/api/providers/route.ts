@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 
-
-// Rest of the existing interfaces...
+interface ErrorResponse {
+  error: string;
+}
 
 interface Provider {
   id: string;
@@ -42,10 +43,6 @@ interface ProviderWithDistance extends Provider {
   distance: number | null;
 }
 
-interface ErrorResponse {
-  error: string;
-}
-
 function calculateDistance(
   lat1: number,
   lon1: number,
@@ -65,8 +62,17 @@ function calculateDistance(
   return R * c;
 }
 
-// Modify the GET handler in api/providers/route.ts
 export async function GET(request: Request): Promise<NextResponse<ProviderWithDistance[] | ErrorResponse>> {
+  // Create a new PrismaClient instance for each request
+  const prismaInstance = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
+  });
+
   try {
     const { searchParams } = new URL(request.url);
     const latitude = searchParams.get('latitude');
@@ -80,45 +86,22 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       );
     }
 
-    // Add debug logging
     console.log('Attempting database query with params:', {
       category,
       latitude,
       longitude
     });
 
-    // Check Prisma connection
-    try {
-      await prisma.$connect();
-    } catch (dbError) {
-      console.error('Failed to connect to database:', dbError);
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
+    const providers = await prismaInstance.provider.findMany({
+      where: {
+        ...(category && { category }),
+      },
+      include: {
+        reviews: true
+      }
+    });
 
-    // Wrap the query in a try-catch to isolate database errors
-    let providers;
-    try {
-      providers = await prisma.provider.findMany({
-        where: {
-          ...(category && { category }),
-        },
-        include: {
-          reviews: true
-        }
-      });
-      console.log('Query successful, found providers:', providers.length);
-    } catch (queryError) {
-      console.error('Database query failed:', queryError);
-      return NextResponse.json(
-        { error: 'Failed to query providers' },
-        { status: 500 }
-      );
-    } finally {
-      await prisma.$disconnect();
-    }
+    console.log('Query successful, found providers:', providers.length);
 
     if (!providers || providers.length === 0) {
       return NextResponse.json(
@@ -127,20 +110,17 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       );
     }
 
-    const providersWithDistance = providers.map((provider) => {
-      const distance = provider.latitude && provider.longitude ? 
-        calculateDistance(
-          parseFloat(latitude),
-          parseFloat(longitude),
-          provider.latitude,
-          provider.longitude
-        ) : null;
-
-      return {
-        ...provider,
-        distance
-      };
-    });
+    const providersWithDistance = providers.map((provider) => ({
+      ...provider,
+      distance: provider.latitude && provider.longitude
+        ? calculateDistance(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            provider.latitude,
+            provider.longitude
+          )
+        : null
+    }));
 
     if (searchParams.get('sortBy') === 'distance') {
       providersWithDistance.sort((a, b) => 
@@ -149,9 +129,9 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     }
 
     return NextResponse.json(providersWithDistance);
+
   } catch (error: unknown) {
-    // Log the full error for debugging
-    console.error('Unhandled error in GET /api/providers:', {
+    console.error('Error in GET /api/providers:', {
       name: error instanceof Error ? error.name : 'Unknown error',
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
@@ -161,13 +141,26 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       { error: 'Internal server error: ' + (error instanceof Error ? error.message : String(error)) },
       { status: 500 }
     );
+  } finally {
+    // Clean up prepared statements and disconnect
+    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL')
+    await prismaInstance.$disconnect()
   }
 }
 
 export async function POST(request: Request) {
+  const prismaInstance = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
+  });
+
   try {
     const data = await request.json();
-    const provider = await prisma.provider.create({
+    const provider = await prismaInstance.provider.create({
       data: {
         name: data.name,
         email: data.email,
@@ -196,5 +189,8 @@ export async function POST(request: Request) {
       { error: 'Failed to create provider' },
       { status: 500 }
     );
+  } finally {
+    await prismaInstance.$executeRawUnsafe('DEALLOCATE ALL')
+    await prismaInstance.$disconnect()
   }
-}
+}≈

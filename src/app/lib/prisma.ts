@@ -19,7 +19,8 @@ export const prisma =
 async function cleanupPrismaConnection() {
   if (prisma) {
     try {
-      await prisma.$executeRaw`DEALLOCATE ALL`
+      // Clean up any existing prepared statements
+      await prisma.$executeRawUnsafe('DEALLOCATE ALL')
       await prisma.$disconnect()
     } catch (e) {
       console.error('Prisma cleanup error:', e)
@@ -28,9 +29,15 @@ async function cleanupPrismaConnection() {
 }
 
 // Handle cleanup for both environments
-process.on('SIGTERM', cleanupPrismaConnection)
-process.on('beforeExit', cleanupPrismaConnection)
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV === 'production') {
+  // In production, clean up on SIGTERM
+  process.on('SIGTERM', cleanupPrismaConnection)
+  // Also clean up on unhandled errors
+  process.on('unhandledRejection', cleanupPrismaConnection)
+} else {
+  // In development, clean up on exit
+  process.on('beforeExit', cleanupPrismaConnection)
+  globalForPrisma.prisma = prisma
+}
 
 export default prisma
