@@ -1,18 +1,36 @@
 import { NextResponse } from 'next/server';
 
-// LA boundaries (approximate)
+// Define LA bounds (approximate bounding box for Los Angeles area)
 const LA_BOUNDS = {
-    north: 34.3373,  // North LA county
-    south: 33.7037,  // South LA county
-    east: -117.6462, // East LA county
-    west: -118.6682  // West LA county
-  };
+  north: 34.3373061,
+  south: 33.7036917,
+  east: -118.1552891,
+  west: -118.6681759,
+};
 
+// Define the Nominatim response type
 interface NominatimResponse {
   place_id: string;
   display_name: string;
   lat: string;
   lon: string;
+  [key: string]: unknown; // Add index signature to allow additional properties
+}
+
+// Type guard function to validate the response
+function isValidNominatimResponse(item: unknown): item is NominatimResponse {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'place_id' in item &&
+    'display_name' in item &&
+    'lat' in item &&
+    'lon' in item &&
+    typeof (item as NominatimResponse).place_id === 'string' &&
+    typeof (item as NominatimResponse).display_name === 'string' &&
+    typeof (item as NominatimResponse).lat === 'string' &&
+    typeof (item as NominatimResponse).lon === 'string'
+  );
 }
 
 export async function GET(request: Request) {
@@ -24,24 +42,47 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Using Nominatim OpenStreetMap API for geocoding
+    console.log('Fetching address suggestions for:', address);
+
     const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?` +
-        `format=json&` +
-        `q=${encodeURIComponent(address)}` +
-        `&countrycodes=us` +
-        `&viewbox=${LA_BOUNDS.west},${LA_BOUNDS.north},${LA_BOUNDS.east},${LA_BOUNDS.south}` +
-        `&bounded=1`
+      `https://nominatim.openstreetmap.org/search?` +
+      `format=json&` +
+      `q=${encodeURIComponent(address)}` +
+      `&countrycodes=us` +
+      `&viewbox=${LA_BOUNDS.west},${LA_BOUNDS.north},${LA_BOUNDS.east},${LA_BOUNDS.south}` +
+      `&bounded=1`,
+      {
+        headers: {
+          'User-Agent': 'LocalQueeries/1.0',
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
     );
 
     if (!response.ok) {
-      throw new Error('Geocoding service failed');
+      console.error('Nominatim API error:', response.statusText);
+      throw new Error(`Geocoding service failed: ${response.statusText}`);
     }
 
-    const data = await response.json() as NominatimResponse[];
-    
-    // Transform the data to match your AddressSuggestion interface
-    const suggestions = data.filter(item => {
+    const data = await response.json();
+    console.log('Nominatim API response:', data);
+
+    if (!Array.isArray(data)) {
+      console.error('Invalid response format:', data);
+      throw new Error('Invalid response from geocoding service');
+    }
+
+    // Type-check each item in the array
+    const validatedData = data.map(item => {
+      if (!isValidNominatimResponse(item)) {
+        throw new Error('Invalid response item format');
+      }
+      return item;
+    });
+
+    const suggestions = validatedData
+      .filter(item => {
         const lat = parseFloat(item.lat);
         const lon = parseFloat(item.lon);
         return (
@@ -50,32 +91,31 @@ export async function GET(request: Request) {
           lon >= LA_BOUNDS.west &&
           lon <= LA_BOUNDS.east
         );
-      }).map(item => ({
+      })
+      .map(item => ({
         place_id: item.place_id,
         display_name: item.display_name,
         lat: parseFloat(item.lat),
         lon: parseFloat(item.lon)
       }));
-  
-      if (suggestions.length === 0) {
-        return NextResponse.json(
-          { error: 'Sorry - Local Queeries only exists in Los Angeles at the moment' },
-          { status: 400 }
-        );
-      }
 
-    // Add these headers here, just before returning
-    const headers = {
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'max-age=3600',
-      'User-Agent': 'LocalQueeries/1.0'
-    };
+    console.log('Filtered suggestions:', suggestions);
 
-    return NextResponse.json(suggestions, { headers });
+    if (suggestions.length === 0) {
+      return NextResponse.json(
+        { error: 'No addresses found in Los Angeles area' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(suggestions);
   } catch (error) {
     console.error('Geocoding error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch address suggestions' },
+      { 
+        error: error instanceof Error ? error.message : 'Failed to fetch address suggestions',
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

@@ -58,34 +58,44 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
       setError(null);
       return;
     }
-
+  
     if (query.length < 3) {
       setError('Please enter at least 3 characters');
       return;
     }
-
+  
     setIsAddressLoading(true);
     setError(null);
-
+  
     try {
       const response = await fetch(
         `/api/geocode?address=${encodeURIComponent(query)}`
       );
-
+  
+      const data = await response.json();
+  
       if (!response.ok) {
+        // Handle the specific case of addresses outside LA
+        if (response.status === 400 && data.error) {
+          setError(data.error);
+          setAddressSuggestions([]);
+          return;
+        }
         throw new Error('Failed to fetch address suggestions');
       }
-
-      const data = await response.json();
-      
-      if (data.length === 0) {
-        setError('No addresses found');
-      }
-
+  
       setAddressSuggestions(data);
+      if (data.length === 0) {
+        setError('No addresses found. Please try a different search.');
+      }
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
-      setError(error instanceof Error ? error.message : 'Failed to search address. Please try again.');
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'Failed to search address. Please try again.'
+      );
+      setAddressSuggestions([]);
     } finally {
       setIsAddressLoading(false);
     }
