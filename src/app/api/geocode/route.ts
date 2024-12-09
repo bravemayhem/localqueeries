@@ -1,37 +1,44 @@
 import { NextResponse } from 'next/server';
 
-// Define LA bounds (approximate bounding box for Los Angeles area)
+// Define LA bounds (expanded to ensure coverage)
 const LA_BOUNDS = {
-  north: 34.3373061,
-  south: 33.7036917,
-  east: -118.1552891,
-  west: -118.6681759,
+  north: 34.337306,
+  south: 33.703691,
+  east: -118.668175,
+  west: -118.155289,
 };
 
-// Define the Nominatim response type
 interface NominatimResponse {
-  place_id: string;
-  display_name: string;
-  lat: string;
-  lon: string;
-  [key: string]: unknown; // Add index signature to allow additional properties
-}
-
-// Type guard function to validate the response
-function isValidNominatimResponse(item: unknown): item is NominatimResponse {
-  return (
-    typeof item === 'object' &&
-    item !== null &&
-    'place_id' in item &&
-    'display_name' in item &&
-    'lat' in item &&
-    'lon' in item &&
-    typeof (item as NominatimResponse).place_id === 'string' &&
-    typeof (item as NominatimResponse).display_name === 'string' &&
-    typeof (item as NominatimResponse).lat === 'string' &&
-    typeof (item as NominatimResponse).lon === 'string'
-  );
-}
+    place_id: number;  // Changed from string to number
+    display_name: string;
+    lat: string;
+    lon: string;
+  }
+  
+  function isValidNominatimResponse(item: unknown): item is NominatimResponse {
+    if (!item || typeof item !== 'object') {
+      return false;
+    }
+    
+    const response = item as Record<string, unknown>;
+    const isValid = (
+      typeof response.place_id === 'number' &&  // Changed from 'string' to 'number'
+      typeof response.display_name === 'string' &&
+      typeof response.lat === 'string' &&
+      typeof response.lon === 'string'
+    );
+  
+    if (!isValid) {
+      console.log('Missing required properties:', {
+        hasPlaceId: typeof response.place_id === 'number',  // Changed from 'string' to 'number'
+        hasDisplayName: typeof response.display_name === 'string',
+        hasLat: typeof response.lat === 'string',
+        hasLon: typeof response.lon === 'string'
+      });
+    }
+  
+    return isValid;
+  }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -41,16 +48,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Address is required' }, { status: 400 });
   }
 
+  if (address.length < 3) {
+    return NextResponse.json(
+      { error: 'Please enter at least 3 characters' },
+      { status: 400 }
+    );
+  }
+
   try {
     console.log('Fetching address suggestions for:', address);
+
+    const searchQuery = address.toLowerCase().includes('los angeles') 
+      ? address 
+      : `${address}, Los Angeles, CA`;
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?` +
       `format=json&` +
-      `q=${encodeURIComponent(address)}` +
+      `q=${encodeURIComponent(searchQuery)}` +
       `&countrycodes=us` +
-      `&viewbox=${LA_BOUNDS.west},${LA_BOUNDS.north},${LA_BOUNDS.east},${LA_BOUNDS.south}` +
-      `&bounded=1`,
+      `&bounded=1` +
+      `&limit=5`,
       {
         headers: {
           'User-Agent': 'LocalQueeries/1.0',
@@ -62,7 +80,10 @@ export async function GET(request: Request) {
 
     if (!response.ok) {
       console.error('Nominatim API error:', response.statusText);
-      throw new Error(`Geocoding service failed: ${response.statusText}`);
+      return NextResponse.json(
+        { error: `Geocoding service failed: ${response.statusText}` },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
@@ -70,52 +91,54 @@ export async function GET(request: Request) {
 
     if (!Array.isArray(data)) {
       console.error('Invalid response format:', data);
-      throw new Error('Invalid response from geocoding service');
+      return NextResponse.json(
+        { error: 'Invalid response from geocoding service' },
+        { status: 500 }
+      );
     }
 
-    // Type-check each item in the array
-    const validatedData = data.map(item => {
-      if (!isValidNominatimResponse(item)) {
-        throw new Error('Invalid response item format');
-      }
-      return item;
-    });
-
-    const suggestions = validatedData
+    const validatedData = data
+    .filter(isValidNominatimResponse)
+    .map(item => ({
+        place_id: item.place_id.toString(),  // Convert number to string
+        display_name: item.display_name,
+        lat: item.lat,
+        lon: item.lon
+    }))
       .filter(item => {
         const lat = parseFloat(item.lat);
         const lon = parseFloat(item.lon);
-        return (
+        
+        const isInBounds = 
+          !isNaN(lat) && 
+          !isNaN(lon) &&
           lat >= LA_BOUNDS.south &&
           lat <= LA_BOUNDS.north &&
-          lon >= LA_BOUNDS.west &&
-          lon <= LA_BOUNDS.east
-        );
-      })
-      .map(item => ({
-        place_id: item.place_id,
-        display_name: item.display_name,
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon)
-      }));
+          lon >= LA_BOUNDS.east &&
+          lon <= LA_BOUNDS.west;
 
-    console.log('Filtered suggestions:', suggestions);
+        if (!isInBounds) {
+          console.log('Address filtered out:', {
+            coordinates: { lat, lon },
+            bounds: LA_BOUNDS
+          });
+        }
 
-    if (suggestions.length === 0) {
+        return isInBounds;
+      });
+
+    if (validatedData.length === 0) {
       return NextResponse.json(
-        { error: 'No addresses found in Los Angeles area' },
+        { error: 'No addresses found in Los Angeles area. Try a different search.' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(suggestions);
+    return NextResponse.json(validatedData);
   } catch (error) {
     console.error('Geocoding error:', error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to fetch address suggestions',
-        details: error instanceof Error ? error.stack : undefined
-      },
+      { error: 'Failed to fetch address suggestions' },
       { status: 500 }
     );
   }

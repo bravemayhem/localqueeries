@@ -1,10 +1,11 @@
-"use client";
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Select from '@/app/ui/components/Select';
 import Button from '@/app/ui/components/Button';
-import { PROVIDER_CATEGORIES } from '@/app/constants/categories';
+import { PROVIDER_CATEGORIES } from '@/app/constants/categories'; // Remove ProviderCategoryType
 import { debounce } from 'lodash';
+
+
+
 
 interface AddressSuggestion {
   place_id: string;
@@ -21,217 +22,173 @@ interface Location {
   };
 }
 
-interface SearchFilters {
-  location: Location;
-  category: string;
-  customCategory?: string;
-  sortBy: string;
-}
-
 interface ProviderSearchProps {
-  onSearch: (filters: SearchFilters) => void;
+  onSearch: (filters: {
+    location: Location;
+    category: string;
+    sortBy: string;
+  }) => void;
   isLoading?: boolean;
 }
 
+// Add proper error type
+interface FetchError extends Error {
+  name: string;
+}
+
+const sortOptions = [
+  { value: 'distance', label: 'Distance' },
+  { value: 'rating', label: 'Rating' },
+  { value: 'reviews', label: 'Number of Reviews' },
+];
+
 export default function ProviderSearch({ onSearch, isLoading = false }: ProviderSearchProps) {
-  // State management
-  const [filters, setFilters] = useState<SearchFilters>({
-    location: {
-      address: '',
-      coordinates: {
-        lat: 34.0522, // LA default
-        lng: -118.2437
-      }
-    },
-    category: '',
-    sortBy: 'distance'
+  const [location, setLocation] = useState<Location>({
+    address: '',
+    coordinates: { lat: 0, lng: 0 }
   });
-  
+  const [category, setCategory] = useState<string>('');
+  const [sortBy, setSortBy] = useState('distance');
+  const [addressInput, setAddressInput] = useState('');
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Address search function
   const searchAddress = useCallback(async (query: string) => {
-    if (!query) {
+    if (!query || query.length < 3) {
       setAddressSuggestions([]);
-      setError(null);
+      setError(query.length > 0 ? 'Please enter at least 3 characters' : null);
       return;
     }
-  
-    if (query.length < 3) {
-      setError('Please enter at least 3 characters');
-      return;
+
+    if (isAddressLoading) {
+      return; // Prevent multiple simultaneous requests
     }
-  
+
     setIsAddressLoading(true);
     setError(null);
-  
+    
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
       const response = await fetch(
-        `/api/geocode?address=${encodeURIComponent(query)}`
+        `/api/geocode?address=${encodeURIComponent(query)}`,
+        { signal: controller.signal }
       );
-  
+      clearTimeout(timeoutId);
+      
       const data = await response.json();
-  
+
+      if (response.status === 400) {
+        setError(data.error);
+        return;
+      }
+
+      if (response.status === 404) {
+        setError('No addresses found. Try a different search.');
+        return;
+      }
+
       if (!response.ok) {
-        // Handle the specific case of addresses outside LA
-        if (response.status === 400 && data.error) {
-          setError(data.error);
-          setAddressSuggestions([]);
-          return;
-        }
-        throw new Error('Failed to fetch address suggestions');
+        throw new Error(data.error || 'Failed to fetch address suggestions');
       }
-  
-      setAddressSuggestions(data);
-      if (data.length === 0) {
-        setError('No addresses found. Please try a different search.');
+
+      if (Array.isArray(data) && data.length > 0) {
+        setAddressSuggestions(data);
+        setError(null);
+      } else {
+        setError('No addresses found. Try a different search.');
       }
-    } catch (error) {
-      console.error('Error fetching address suggestions:', error);
+    } catch (error: unknown) {
+      console.error('Error in address search:', error);
+      const fetchError = error as FetchError;
       setError(
-        error instanceof Error 
-          ? error.message 
+        fetchError.name === 'AbortError' 
+          ? 'Search took too long. Please try again.' 
           : 'Failed to search address. Please try again.'
       );
-      setAddressSuggestions([]);
     } finally {
       setIsAddressLoading(false);
     }
-  }, []);
+  }, [isAddressLoading]);
 
-  // Create memoized debounced function
   const debouncedSearchAddress = useMemo(
-    () => debounce((query: string) => {
-      searchAddress(query);
-    }, 300),
+    () => debounce(searchAddress, 1000),
     [searchAddress]
   );
 
-  // Cleanup debounced function on unmount
+  const handleAddressSelect = (address: AddressSuggestion) => {
+    setLocation({
+      address: address.display_name,
+      coordinates: {
+        lat: parseFloat(address.lat),
+        lng: parseFloat(address.lon)
+      }
+    });
+    setAddressInput(address.display_name);
+    setAddressSuggestions([]);
+    setError(null);
+  };
+
+  const handleSearch = () => {
+    if (!location.address) {
+      setError('Please select a location');
+      return;
+    }
+    if (!category) {
+      setError('Please select a category');
+      return;
+    }
+    onSearch({
+      location,
+      category,
+      sortBy
+    });
+  };
+
   useEffect(() => {
     return () => {
       debouncedSearchAddress.cancel();
     };
   }, [debouncedSearchAddress]);
 
-  // Handle address selection
-  const handleAddressSelect = (address: AddressSuggestion) => {
-    setFilters(prev => ({
-      ...prev,
-      location: {
-        address: address.display_name,
-        coordinates: {
-          lat: parseFloat(address.lat),
-          lng: parseFloat(address.lon)
-        }
-      }
-    }));
-    setAddressSuggestions([]);
-    setError(null);
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (key: keyof SearchFilters) => (value: string) => {
-    if (key === 'location') return; // Location is handled separately
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setError(null); // Clear any previous errors
-  };
-
-  // Handle search submission
-  const handleSearch = () => {
-    // Validate required fields
-    if (!filters.location.address) {
-      setError('Please enter an address');
-      return;
-    }
-
-    if (!filters.category) {
-      setError('Please select a category');
-      return;
-    }
-
-    if (filters.category === 'other' && !filters.customCategory) {
-      setError('Please specify the service type');
-      return;
-    }
-
-    setError(null);
-    onSearch(filters);
-  };
-
-  // Format category options
-  const categoryOptions = [
-    ...PROVIDER_CATEGORIES.map(category => ({
-      value: category,
-      label: category.split('_').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ')
-    })),
-    { value: 'other', label: 'Other (Please Specify)' }
-  ];
-
-  // Sort options
-  const sortOptions = [
-    { value: 'distance', label: 'Distance' },
-    { value: 'rating', label: 'Rating' },
-    { value: 'reviews', label: 'Review Count' },
-  ];
-
   return (
-    <div className="py-6" role="search" aria-label="Provider search">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Location Search */}
+    <div className="py-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="relative">
-          <label 
-            htmlFor="location-search"
-            className="block text-text-primary font-medium mb-2"
-          >
+          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
             Location
           </label>
           <input
-            id="location-search"
             type="text"
-            value={filters.location.address}
+            id="location"
+            value={addressInput}
             onChange={(e) => {
-              setFilters(prev => ({
-                ...prev,
-                location: { ...prev.location, address: e.target.value }
-              }));
+              setAddressInput(e.target.value);
               debouncedSearchAddress(e.target.value);
             }}
-            placeholder="Enter your address"
-            className={`w-full px-4 py-2 rounded-md border ${
+            placeholder="Enter an address"
+            className={`w-full px-4 py-2 border rounded-md ${
               error ? 'border-red-500' : 'border-gray-300'
             } focus:outline-none focus:ring-2 focus:ring-primary-main`}
             aria-invalid={!!error}
             aria-describedby={error ? "location-error" : undefined}
+            suppressHydrationWarning
           />
-          
-          {/* Loading State */}
+
           {isAddressLoading && (
-            <div 
-              className="absolute mt-1 text-sm text-gray-500"
-              role="status"
-              aria-label="Loading address suggestions"
-            >
+            <div className="absolute mt-1 text-sm text-gray-500" role="status">
               Loading...
             </div>
           )}
-          
-          {/* Error Message */}
+
           {error && (
-            <div 
-              id="location-error"
-              className="mt-1 text-sm text-red-500"
-              role="alert"
-            >
+            <div id="location-error" className="mt-1 text-sm text-red-500" role="alert">
               {error}
             </div>
           )}
-          
-          {/* Address Suggestions */}
+
           {addressSuggestions.length > 0 && (
             <ul 
               className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto"
@@ -250,7 +207,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                   role="option"
                   tabIndex={0}
-                  aria-selected="false"
+                  aria-selected={false}
                 >
                   {address.display_name}
                 </li>
@@ -259,52 +216,41 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
           )}
         </div>
 
-        {/* Category Selection */}
         <div>
-          <label 
-            htmlFor="category-select"
-            className="block text-text-primary font-medium mb-2"
-          >
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
           <Select
-            value={filters.category}
-            onChange={handleFilterChange('category')}
-            options={categoryOptions}
-            placeholder="Select category"
+            id="category"
+            value={category}
+            onChange={(value) => setCategory(value)}
+            options={PROVIDER_CATEGORIES.map(category => ({
+              value: category,
+              label: category
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+            }))}
+            placeholder="Select a category"
           />
-          {filters.category === 'other' && (
-            <input
-              type="text"
-              className="mt-2 w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-main"
-              placeholder="Please specify service type"
-              value={filters.customCategory || ''}
-              onChange={(e) => handleFilterChange('customCategory')(e.target.value)}
-              aria-label="Custom category specification"
-            />
-          )}
         </div>
 
-        {/* Sort Selection */}
         <div>
-          <label 
-            htmlFor="sort-select"
-            className="block text-text-primary font-medium mb-2"
-          >
+          <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
             Sort By
           </label>
           <Select
-            value={filters.sortBy}
-            onChange={handleFilterChange('sortBy')}
+            id="sortBy"
+            value={sortBy}
+            onChange={(value) => setSortBy(value)}
             options={sortOptions}
-            placeholder="Sort by"
           />
         </div>
       </div>
 
-      {/* Search Button */}
       <div className="mt-6 flex justify-center">
         <Button 
+          key="search-button"
           onClick={handleSearch} 
           variant="secondary" 
           bold

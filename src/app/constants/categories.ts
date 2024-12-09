@@ -2,7 +2,7 @@ export const PROVIDER_CATEGORIES = [
     'painting',
     'plumbing',
     'electrical',
-    'dog walking',
+    'dog_walking',
     'carpentry',
     'landscaping',
     'handywork',
@@ -14,7 +14,7 @@ export const PROVIDER_CATEGORIES = [
     'pest_control',
     'moving',
     'interior_design',
-    'security',
-] as const;
+    'security'
+  ] as const;
   
-export type ProviderCategory = typeof PROVIDER_CATEGORIES[number];
+  export type ProviderCategoryType = (typeof PROVIDER_CATEGORIES)[number] | '' | 'other';
