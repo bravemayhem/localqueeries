@@ -8,3 +8,6 @@ SET work_mem = '256MB';
 
 -- Set statement timeout
 SET statement_timeout = '60s';
+
+-- Deal with prepared statements
+DEALLOCATE ALL;
