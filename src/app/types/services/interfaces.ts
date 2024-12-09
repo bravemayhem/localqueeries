@@ -1,4 +1,5 @@
-import { TaskType } from './enums';
+import { TaskType, RateType, ServiceStatus } from './types';
+import type { DetailedLocation } from '../location';
 
 export interface ServiceListing {
   id: string;
@@ -12,26 +13,22 @@ export interface ServiceListing {
     rating?: number;
     reviewCount?: number;
   };
-  location: {
-    city: string;
-    state: string;
-    zipCode: string;
-  };
+  location: DetailedLocation;
   pricing?: {
     rate: number;
-    rateType: 'HOURLY' | 'FIXED' | 'STARTING_AT';
+    rateType: RateType;
   };
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  status: ServiceStatus;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface OddJob extends ServiceListing {
-    taskType: TaskType.ODD_JOB;
-    dateNeeded: Date;
-    estimatedDuration?: string;
-    budget?: number;
-  }
+  taskType: TaskType.ODD_JOB;
+  dateNeeded: Date;
+  estimatedDuration?: string;
+  budget?: number;
+}
 
 export interface ProfessionalService extends ServiceListing {
   taskType: TaskType.PROFESSIONAL_SERVICE;

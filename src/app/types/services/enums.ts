@@ -1,4 +1,0 @@
-export enum TaskType {
-    PROFESSIONAL_SERVICE = 'PROFESSIONAL_SERVICE',
-    ODD_JOB = 'ODD JOB'
-  }

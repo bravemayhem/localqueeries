@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 
+
+// Rest of the existing interfaces...
+
 interface Provider {
   id: string;
   createdAt: Date;

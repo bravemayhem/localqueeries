@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+
 // Define LA bounds (expanded to ensure coverage)
 const LA_BOUNDS = {
   north: 34.337306,
@@ -9,6 +10,7 @@ const LA_BOUNDS = {
 };
 
 interface NominatimResponse {
+    /** Raw response from Nominatim API */
     place_id: number;  // Changed from string to number
     display_name: string;
     lat: string;

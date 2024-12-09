@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import ProviderSearch from '@/app/components/providers/ProviderSearch';
 import ProviderCard from '@/app/components/providers/ProviderCard';
+import { Location } from '@/app/types/location';
 
 interface Provider {
   id: string;
@@ -18,13 +19,7 @@ interface Provider {
 }
 
 interface SearchFilters {
-  location: {
-    address: string;
-    coordinates: {
-      lat: number;
-      lng: number;
-    };
-  };
+  location: Location;
   category: string;
   customCategory?: string;
   sortBy: string;
