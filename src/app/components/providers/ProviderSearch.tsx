@@ -1,11 +1,10 @@
+"use client";
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Select from '@/app/ui/components/Select';
 import Button from '@/app/ui/components/Button';
-import { PROVIDER_CATEGORIES } from '@/app/constants/categories'; // Remove ProviderCategoryType
+import { PROVIDER_CATEGORIES } from '@/app/constants/categories';
 import { debounce } from 'lodash';
-
-
-
 
 interface AddressSuggestion {
   place_id: string;
@@ -31,16 +30,15 @@ interface ProviderSearchProps {
   isLoading?: boolean;
 }
 
-// Add proper error type
-interface FetchError extends Error {
-  name: string;
-}
-
 const sortOptions = [
   { value: 'distance', label: 'Distance' },
   { value: 'rating', label: 'Rating' },
   { value: 'reviews', label: 'Number of Reviews' },
 ];
+
+interface FetchError extends Error {
+  name: string;
+}
 
 export default function ProviderSearch({ onSearch, isLoading = false }: ProviderSearchProps) {
   const [location, setLocation] = useState<Location>({
@@ -51,8 +49,8 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
   const [sortBy, setSortBy] = useState('distance');
   const [addressInput, setAddressInput] = useState('');
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
-  const [isAddressLoading, setIsAddressLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
 
   const searchAddress = useCallback(async (query: string) => {
     if (!query || query.length < 3) {
@@ -154,9 +152,9 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
   }, [debouncedSearchAddress]);
 
   return (
-    <div className="py-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="relative">
+    <div className="py-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="relative md:col-span-1">
           <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
             Location
           </label>
@@ -176,24 +174,15 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
             aria-describedby={error ? "location-error" : undefined}
             suppressHydrationWarning
           />
-
-          {isAddressLoading && (
-            <div className="absolute mt-1 text-sm text-gray-500" role="status">
-              Loading...
-            </div>
-          )}
-
           {error && (
-            <div id="location-error" className="mt-1 text-sm text-red-500" role="alert">
+            <p id="location-error" className="mt-1 text-sm text-red-500">
               {error}
-            </div>
+            </p>
           )}
-
           {addressSuggestions.length > 0 && (
-            <ul 
-              className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto"
+            <ul
+              className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg max-h-60 overflow-auto"
               role="listbox"
-              aria-label="Address suggestions"
             >
               {addressSuggestions.map((address) => (
                 <li
@@ -216,7 +205,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
           )}
         </div>
 
-        <div>
+        <div className="md:col-span-1">
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
@@ -235,7 +224,7 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
           />
         </div>
 
-        <div>
+        <div className="md:col-span-1">
           <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
             Sort By
           </label>
@@ -249,16 +238,24 @@ export default function ProviderSearch({ onSearch, isLoading = false }: Provider
       </div>
 
       <div className="mt-6 flex justify-center">
-        <Button 
-          key="search-button"
-          onClick={handleSearch} 
-          variant="secondary" 
-          bold
-          disabled={isLoading}
-          aria-busy={isLoading}
-        >
-          {isLoading ? 'Searching...' : 'Search Providers'}
-        </Button>
+      <Button 
+        onClick={handleSearch}
+        disabled={isLoading}
+        variant="secondary"
+        bold
+        className="px-4 sm:px-8 py-1.5 sm:py-2 rounded-md font-medium 
+          hover:bg-[#e6d4b0] transition-colors text-sm sm:text-base flex items-center 
+          justify-center min-w-[120px] sm:min-w-[160px]"
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="animate-spin">⌛</span> 
+            Searching...
+          </span>
+        ) : (
+          'Search Providers'
+        )}
+      </Button>
       </div>
     </div>
   );
