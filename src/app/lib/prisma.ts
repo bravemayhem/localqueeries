@@ -7,30 +7,30 @@ const globalForPrisma = global as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ['query'],
+    log: ['query', 'error', 'warn'],
     datasources: {
       db: {
-        url: process.env.NODE_ENV === 'production' 
-          ? process.env.DIRECT_URL  
-          : process.env.DATABASE_URL 
+        url: process.env.DATABASE_URL
       }
     }
   })
 
-// Cleanup function
+// Cleanup function for both dev and prod
 async function cleanupPrismaConnection() {
   if (prisma) {
     try {
       await prisma.$executeRaw`DEALLOCATE ALL`
+      await prisma.$disconnect()
     } catch (e) {
-      console.log('Cleanup error:', e)
+      console.error('Prisma cleanup error:', e)
     }
   }
 }
 
-if (process.env.NODE_ENV !== 'production') {
-  process.on('beforeExit', cleanupPrismaConnection)
-  globalForPrisma.prisma = prisma
-}
+// Handle cleanup for both environments
+process.on('SIGTERM', cleanupPrismaConnection)
+process.on('beforeExit', cleanupPrismaConnection)
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 export default prisma
