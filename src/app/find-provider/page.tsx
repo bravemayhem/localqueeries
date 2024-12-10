@@ -51,30 +51,33 @@ export default function FindProvider() {
         longitude: filters.location.coordinates.lng.toString(),
         sortBy: filters.sortBy,
       });
-
-      console.log('Sending request with params:', params.toString());
       
       const response = await fetch(`/api/providers?${params}`);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        const errorData = await response.json().catch(() => ({ error: 'Server error' }));
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error('Failed to parse server response');
+      });
 
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format from server');
       }
 
       setProviders(data);
+      if (data.length === 0) {
+        setError('No providers found matching your criteria');
+      }
     } catch (error) {
-      console.error('Error fetching providers:', {
-        name: error instanceof Error ? error.name : 'Unknown error',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      setError(error instanceof Error ? error.message : 'Failed to fetch providers');
+      console.error('Error fetching providers:', error);
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'An unexpected error occurred while fetching providers'
+      );
     } finally {
       setIsLoading(false);
     }

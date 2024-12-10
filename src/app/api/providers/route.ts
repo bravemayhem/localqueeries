@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
-import { Provider } from '@prisma/client';
 
 interface ErrorResponse {
   error: string;
 }
 
-interface ProviderWithDistance extends Provider {
+interface ProviderWithDistance {
+  id: string;
+  name: string;
+  category: string;
+  isVerified: boolean;
+  isAlly: boolean;
+  isLGBTQIA: boolean;
+  rating: number;
+  reviewCount: number;
+  imageUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
   distance: number | null;
 }
 
@@ -53,21 +63,23 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
       where: {
         ...(category && { category }),
       },
-      include: {
-        reviews: true
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        isVerified: true,
+        isAlly: true,
+        isLGBTQIA: true,
+        rating: true,
+        reviewCount: true,
+        imageUrl: true,
+        latitude: true,
+        longitude: true
       }
     });
 
-    if (!Array.isArray(providers)) {
-      return NextResponse.json({
-        error: 'Invalid database response'
-      }, { status: 500 });
-    }
-
-    if (providers.length === 0) {
-      return NextResponse.json({
-        error: `No providers found for category: ${category}`
-      }, { status: 404 });
+    if (!providers) {
+      throw new Error('Database query failed');
     }
 
     const providersWithDistance = providers.map(provider => ({
@@ -85,15 +97,11 @@ export async function GET(request: Request): Promise<NextResponse<ProviderWithDi
     return NextResponse.json(providersWithDistance);
 
   } catch (error) {
-    console.error('Server error:', {
-      name: error instanceof Error ? error.name : 'Unknown error',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Internal server error'
-    }, { status: 500 });
+    console.error('Server error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Database error occurred' },
+      { status: 500 }
+    );
   }
 }
 
