@@ -6,7 +6,7 @@ import path from 'path'
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 async function testConnection(type: 'development' | 'production') {
-  console.log(`Testing ${type} connection...`)
+  console.log(`\nTesting ${type} connection...`)
   
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {
@@ -39,9 +39,10 @@ async function testConnection(type: 'development' | 'production') {
     await client.query('DEALLOCATE test_stmt')
     console.log('Prepared statement cleaned up')
     
+    return true
   } catch (error) {
-    console.error('Connection failed:', error)
-    throw error
+    console.error(`Connection failed for ${type}:`, error)
+    return false
   } finally {
     await client.end()
     console.log('Connection closed')
@@ -50,14 +51,35 @@ async function testConnection(type: 'development' | 'production') {
 
 // Run tests
 async function main() {
+  console.log('Starting database connection tests...')
+  
   try {
-    await testConnection('development')
+    const devSuccess = await testConnection('development')
     console.log('\n-------------------\n')
-    await testConnection('production')
+    
+    if (devSuccess) {
+      console.log('Development connection successful, testing production...')
+      const prodSuccess = await testConnection('production')
+      
+      if (devSuccess && prodSuccess) {
+        console.log('\nAll connection tests passed successfully! 🎉')
+        process.exit(0)
+      } else {
+        console.error('\nSome connection tests failed')
+        process.exit(1)
+      }
+    } else {
+      console.error('\nDevelopment connection failed, skipping production test')
+      process.exit(1)
+    }
   } catch (error) {
-    console.error('Test failed:', error)
+    console.error('\nTest execution failed:', error)
     process.exit(1)
   }
 }
 
-main()
+if (require.main === module) {
+  main()
+}
+
+export { testConnection }
