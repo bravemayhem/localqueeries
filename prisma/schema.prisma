@@ -4,72 +4,75 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
   relationMode = "prisma"
 }
 
 model Provider {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Basic Info
-  name        String
-  email       String   @unique
-  phone       String?
-  imageUrl    String?
-  
+  name     String
+  email    String  @unique
+  phone    String?
+  imageUrl String?
+
   // Business Details
-  businessName   String?
-  category      String
-  services      String[]
-  isAlly        Boolean @default(false)
-  isVerified    Boolean @default(false)
-  isLGBTQIA     Boolean @default(false)
-  
+  businessName String?
+  category     String
+  services     String[]
+  isAlly       Boolean  @default(false)
+  isVerified   Boolean  @default(false)
+  isLGBTQIA    Boolean  @default(false)
+
   // Location
+  streetAddress String? // Adding this field
+  unit          String? // Adding this field
   city          String?
   state         String?
   zipCode       String?
   latitude      Float?
   longitude     Float?
-  
+
   // Metrics
-  rating        Float?
-  reviewCount   Int     @default(0)
+  rating      Float?
+  reviewCount Int    @default(0)
 
   // Relations
-  reviews       Review[]
+  reviews Review[]
 }
 
 model User {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  name        String
-  email       String   @unique
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name     String
+  email    String   @unique
+  password String   // Add this field
+
   // Relations
-  reviews     Review[]
+  reviews Review[]
 }
 
 model Review {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  rating      Float
-  comment     String?
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rating  Float
+  comment String?
+
   // Relations
-  provider    Provider @relation(fields: [providerId], references: [id])
-  providerId  String
-  
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   @@index([providerId])
   @@index([userId])

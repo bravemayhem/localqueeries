@@ -25,14 +25,11 @@ export async function POST(request: Request) {
       data: {
         name: data.name,
         email: data.email,
-        password: data.password, // Note: Should be hashed before saving
-        phone: data.phone,
-        address: data.address,
-        preferences: data.preferences || {}
+        password: data.password,
       }
     });
     return NextResponse.json(user);
-  } catch (error: unknown) {  // Added type and using error in response
+  } catch (error: unknown) {
     console.error('Error creating user:', error);
     return NextResponse.json(
       { error: 'Failed to create user' },
