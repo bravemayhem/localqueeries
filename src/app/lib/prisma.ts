@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const prismaClientSingleton = () => {
-  const prisma = new PrismaClient({
+  return new PrismaClient({
     log: ['error', 'warn'],
     datasources: {
       db: {
@@ -13,8 +13,6 @@ const prismaClientSingleton = () => {
       }
     }
   })
-
-  return prisma
 }
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
