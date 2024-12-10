@@ -14,19 +14,6 @@ const prismaClientSingleton = () => {
     }
   })
 
-  // Add the extension directly to the client
-  prisma.$extends({
-    query: {
-      async $allOperations({ query, args }) {
-        try {
-          return await query(args)
-        } finally {
-          await prisma.$executeRaw`DEALLOCATE ALL`
-        }
-      },
-    },
-  })
-
   return prisma
 }
 

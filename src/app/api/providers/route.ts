@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { Provider } from '@prisma/client';
 
 type ProviderResponse = {
   id: string;
@@ -13,6 +14,10 @@ type ProviderResponse = {
   imageUrl: string | null;
   latitude: number | null;
   longitude: number | null;
+  distance: number | null;
+}
+
+type ProviderWithDistance = ProviderResponse & {
   distance: number | null;
 }
 
@@ -31,10 +36,8 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
 
     const userLat = parseFloat(latStr);
     const userLon = parseFloat(lonStr);
-    
-    // Ensure connection is fresh
-    await prisma.$disconnect();
-    await prisma.$connect();
+
+    await prisma.$executeRaw`DEALLOCATE ALL`;
     
     const providers = await prisma.provider.findMany({
       where: {
@@ -42,7 +45,7 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
       }
     });
 
-    const providersWithDistance = providers.map(provider => {
+    const providersWithDistance = providers.map((provider: Provider) => {
       let distance: number | null = null;
       
       if (provider.latitude && provider.longitude) {
@@ -73,32 +76,19 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
         longitude: provider.longitude,
         distance
       };
-    }).sort((a, b) => {
+    }).sort((a: ProviderWithDistance, b: ProviderWithDistance) => {
       if (a.distance === null) return 1;
       if (b.distance === null) return -1;
       return a.distance - b.distance;
     });
 
-    return NextResponse.json(providersWithDistance, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
+    return NextResponse.json(providersWithDistance);
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json({ 
       error: 'Internal server error', 
       details: error instanceof Error ? error.message : 'Unknown error' 
-    }, { 
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } finally {
-    await prisma.$disconnect();
+    }, { status: 500 });
   }
 }
 
