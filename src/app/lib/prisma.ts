@@ -18,35 +18,30 @@ const prismaClientSingleton = () => {
   // Add middleware for connection management
   client.$use(async (params, next) => {
     try {
-      // Execute the query
       const result = await next(params)
       return result
     } catch (error) {
-      // If we get a prepared statement error, try to deallocate and retry
       if (error instanceof Error && 
           error.message.includes('prepared statement')) {
-        try {
-          // Disconnect to clear any existing prepared statements
-          await client.$disconnect()
-          // Small delay before retrying
-          await new Promise(resolve => setTimeout(resolve, 100))
-          // Retry the query
-          return await next(params)
-        } catch (retryError) {
-          throw retryError
-        }
+        // Force a new connection
+        await client.$disconnect()
+        // Create a new connection
+        await new Promise(resolve => setTimeout(resolve, 100))
+        // Retry the query with the new connection
+        return await next(params)
       }
       throw error
+    } finally {
+      // Always disconnect after query completion
+      await client.$disconnect()
     }
   })
 
   return client
 }
 
-// Create or reuse the Prisma Client instance
 const prisma = global.prisma ?? prismaClientSingleton()
 
-// In development, attach to global object
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma
 }
