@@ -37,7 +37,9 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
     const userLat = parseFloat(latStr);
     const userLon = parseFloat(lonStr);
 
-    await prisma.$executeRaw`DEALLOCATE ALL`;
+    // Ensure connection is fresh for each request
+    await prisma.$disconnect();
+    await prisma.$connect();
     
     const providers = await prisma.provider.findMany({
       where: {
@@ -89,6 +91,9 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
       error: 'Internal server error', 
       details: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
+  } finally {
+    // Clean up connection
+    await prisma.$disconnect();
   }
 }
 
