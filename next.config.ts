@@ -7,17 +7,20 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb'
     }
   },
-  webpack: (config) => {
-    config.experiments = {
-      ...config.experiments,
-      topLevelAwait: true,
-    };
-    return config;
-  },
   images: {
     domains: ['localhost'],
-    unoptimized: true
-  }
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: process.env.NEXT_PUBLIC_IMAGE_HOSTNAME || 'your-image-domain.com',
+      },
+    ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/webp'],
+  },
+  poweredByHeader: false,
+  compress: true,
 };
 
 export default nextConfig;

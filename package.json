@@ -10,7 +10,7 @@
     "seed": "ts-node --project prisma/tsconfig.prisma.json prisma/seed.ts",
     "test-db": "NODE_ENV=development ts-node --project prisma/tests/tsconfig.test.json prisma/tests/test-pg.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@types/google.maps": "^3.58.1",
