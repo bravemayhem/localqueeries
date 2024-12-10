@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const prismaClientSingleton = () => {
-  return new PrismaClient({
+  const prisma = new PrismaClient({
     log: ['error', 'warn'],
     datasources: {
       db: {
@@ -13,6 +13,21 @@ const prismaClientSingleton = () => {
       }
     }
   })
+
+  // Add the extension directly to the client
+  prisma.$extends({
+    query: {
+      async $allOperations({ query, args }) {
+        try {
+          return await query(args)
+        } finally {
+          await prisma.$executeRaw`DEALLOCATE ALL`
+        }
+      },
+    },
+  })
+
+  return prisma
 }
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
@@ -21,14 +36,4 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }
 
-// Add extensions after creating the client
-const extendedPrisma = prisma.$extends({
-  query: {
-    $allOperations({ query, args }) {
-      // Add query middleware if needed
-      return query(args)
-    },
-  },
-})
-
-export default extendedPrisma
+export default prisma

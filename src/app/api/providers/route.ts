@@ -117,6 +117,8 @@ export async function POST(request: Request) {
         isAlly: data.isAlly || false,
         isVerified: false,
         isLGBTQIA: data.isLGBTQIA || false,
+        streetAddress: data.streetAddress,
+        unit: data.unit,
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
