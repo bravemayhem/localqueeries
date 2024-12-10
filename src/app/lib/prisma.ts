@@ -1,39 +1,26 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = global as unknown as {
-  prisma: PrismaClient | undefined
+declare global {
+  var prisma: PrismaClient | undefined
 }
 
-export function createPrismaClient() {
-  const prisma = new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    datasourceUrl: process.env.DATABASE_URL,
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log: ['error', 'warn'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
   })
-
-  prisma.$extends({
-    query: {
-      async $allOperations({ operation, model, args, query }) {
-        try {
-          const result = await query(args)
-          return result
-        } catch (error: unknown) {
-          if (error instanceof Error && error.message.includes('prepared statement')) {
-            await prisma.$executeRawUnsafe('DEALLOCATE ALL').catch(() => {})
-            return query(args)
-          }
-          throw error
-        }
-      },
-    },
-  })
-
-  return prisma
 }
 
-const prisma = globalForPrisma.prisma ?? createPrismaClient()
+// Create or reuse the Prisma Client instance
+const prisma = globalThis.prisma ?? prismaClientSingleton()
 
+// Prevent multiple instances in development
 if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
+  globalThis.prisma = prisma
 }
 
 export default prisma

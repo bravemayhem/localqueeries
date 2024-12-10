@@ -1,42 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { Provider } from '@prisma/client';
 
 interface ErrorResponse {
   error: string;
-}
-
-interface Provider {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  name: string;
-  email: string;
-  phone: string | null;
-  imageUrl: string | null;
-  businessName: string | null;
-  category: string;
-  services: string[];
-  isAlly: boolean;
-  isVerified: boolean;
-  isLGBTQIA: boolean;
-  address: string | null;
-  city: string;
-  state: string;
-  zipCode: string;
-  latitude: number | null;
-  longitude: number | null;
-  rating: number;
-  reviewCount: number;
-  reviews: Review[];
-}
-
-interface Review {
-  id: string;
-  createdAt: Date;
-  rating: number;
-  comment: string | null;
-  providerId: string;
-  userId: string;
 }
 
 interface ProviderWithDistance extends Provider {

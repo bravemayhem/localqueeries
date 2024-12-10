@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ProviderSearch from '@/app/components/providers/ProviderSearch';
 import ProviderCard from '@/app/components/providers/ProviderCard';
@@ -25,10 +25,20 @@ interface SearchFilters {
   sortBy: string;
 }
 
+const formatDistance = (distance: number | null): string => {
+  if (distance === null) return 'Distance unavailable';
+  return `${distance.toFixed(1)} miles`;
+};
+
 export default function FindProvider() {
+  const [mounted, setMounted] = useState(false);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSearch = async (filters: SearchFilters) => {
     setIsLoading(true);
@@ -70,10 +80,9 @@ export default function FindProvider() {
     }
   };
 
-  const formatDistance = (distance: number | null): string => {
-    if (distance === null) return 'Distance unavailable';
-    return `${distance.toFixed(1)} miles`;
-  };
+  if (!mounted) {
+    return null; // or a loading skeleton
+  }
 
   return (
     <div>
