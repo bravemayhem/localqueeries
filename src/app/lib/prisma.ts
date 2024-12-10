@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { Prisma } from '@prisma/client'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -16,17 +15,22 @@ const prismaClientSingleton = () => {
     }
   })
 
-  // Add middleware to handle prepared statements cleanup
+  // Add middleware for connection management
   client.$use(async (params, next) => {
     try {
-      return await next(params)
+      // Execute the query
+      const result = await next(params)
+      return result
     } catch (error) {
-      // Type guard for Prisma errors
-      if (error instanceof Prisma.PrismaClientKnownRequestError && 
+      // If we get a prepared statement error, try to deallocate and retry
+      if (error instanceof Error && 
           error.message.includes('prepared statement')) {
         try {
-          // Try to execute the query again after a brief delay
+          // Disconnect to clear any existing prepared statements
+          await client.$disconnect()
+          // Small delay before retrying
           await new Promise(resolve => setTimeout(resolve, 100))
+          // Retry the query
           return await next(params)
         } catch (retryError) {
           throw retryError
@@ -39,15 +43,12 @@ const prismaClientSingleton = () => {
   return client
 }
 
+// Create or reuse the Prisma Client instance
 const prisma = global.prisma ?? prismaClientSingleton()
 
+// In development, attach to global object
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma
 }
-
-// Add cleanup handler
-process.on('beforeExit', async () => {
-  await prisma.$disconnect()
-})
 
 export default prisma
