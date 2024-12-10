@@ -21,4 +21,14 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }
 
-export default prisma
+// Add extensions after creating the client
+const extendedPrisma = prisma.$extends({
+  query: {
+    $allOperations({ query, args }) {
+      // Add query middleware if needed
+      return query(args)
+    },
+  },
+})
+
+export default extendedPrisma

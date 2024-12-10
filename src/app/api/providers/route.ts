@@ -18,8 +18,6 @@ type ProviderResponse = {
 
 export async function GET(request: Request): Promise<NextResponse<ProviderResponse[] | { error: string, details?: string }>> {
   try {
-    await prisma.$connect()
-    
     const { searchParams } = new URL(request.url);
     const latStr = searchParams.get('latitude');
     const lonStr = searchParams.get('longitude');
@@ -33,6 +31,10 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
 
     const userLat = parseFloat(latStr);
     const userLon = parseFloat(lonStr);
+    
+    // Ensure connection is fresh
+    await prisma.$disconnect();
+    await prisma.$connect();
     
     const providers = await prisma.provider.findMany({
       where: {
@@ -96,7 +98,7 @@ export async function GET(request: Request): Promise<NextResponse<ProviderRespon
       },
     });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
 }
 
